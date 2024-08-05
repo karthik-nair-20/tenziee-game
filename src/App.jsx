@@ -8,6 +8,15 @@ function App() {
   // thie is an array of object
   const [dice, setDice] = React.useState(allNewDice());
   const [tenziee, setTenziee] = React.useState(false);
+  const [roll, setRoll] = React.useState(0);
+
+  const [bestRoll, setBestRoll] = React.useState(
+    JSON.parse(localStorage.getItem("bestRoll")) || 0
+  );
+
+  const [bestTime, setBestTime] = React.useState(
+    JSON.parse(localStorage.getItem("bestTime")) || 0
+  );
 
   // effects START
     React.useEffect(() => {
@@ -16,6 +25,7 @@ function App() {
         setTenziee(true);
         console.log("you won mf");
         console.log(tenziee)
+        setStart(false);
       }
     },[dice])
 
@@ -67,6 +77,7 @@ function App() {
         return die.isHeld ? die : { ...die, value: getRandomVal() };
       });
     });
+    updateRoll()
   }
 
   function gameOverCheck(dice) {
@@ -76,6 +87,37 @@ function App() {
 
     return allHeld && checkSameValue;
   }
+
+  function updateRoll() {
+    setRoll(prevRoll => ++prevRoll )
+  }
+  // ---------------------TIMER--------------------------------------------
+  const [timer, setTimer] = React.useState(0)
+  const [start, setStart] = React.useState(true)
+
+  React.useEffect(() => {
+    let interval = null;
+    if(start)
+    {
+      interval = setInterval(() => {
+        setTimer(prevTime => prevTime + 20)
+      },20)
+    }
+    else {
+      clearInterval(interval)
+    }
+    return () => clearInterval(interval);
+  },[start])
+
+
+  function formatTime(time) {
+    // gives me the latest value of timer which is increase by 20 every 20 milisecond.
+    const getMinutes = `${Math.floor((time / 60000) % 60)}`.slice(-2);
+    const getSeconds = `0${Math.floor((time / 1000) % 60)}`.slice(-2);
+    const getMilliseconds = `00${(time % 1000)}`.slice(-3);
+    return `${getMinutes}:${getSeconds}:${getMilliseconds}`
+  }
+
 
   return (
     <div className="bg-slate-700 w-screen h-screen m-0 p-0">
@@ -90,6 +132,8 @@ function App() {
           </p>
         )}
         {tenziee && <p className="winner gradient-text"> YOU WON!</p>}
+        <h1>{roll}</h1>
+        <p>{formatTime(timer)}</p>
         <div className="grid grid-cols-5 grid-rows-2 gap-">
           {diceElement}
           <button
