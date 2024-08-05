@@ -2,10 +2,12 @@ import React from "react";
 import "./App.css";
 import Die from "./components/Die";
 import { nanoid } from "nanoid";
-import ConfettiExplosion from 'react-confetti-explosion';
+// import Confetti from 'react-confetti'
+import Scorecard from "./components/Scorecard";
+import Footer from "./components/Footer";
 
 function App() {
-  // thie is an array of object
+  // dice is an array of object
   const [dice, setDice] = React.useState(allNewDice());
   const [tenziee, setTenziee] = React.useState(false);
   const [roll, setRoll] = React.useState(0);
@@ -19,16 +21,15 @@ function App() {
   );
 
   // effects START
-    React.useEffect(() => {
-      if(gameOverCheck(dice))
-      {
-        setTenziee(true);
-        console.log("you won mf");
-        console.log(tenziee)
-        setStart(false);
-      }
-    },[dice])
-
+  React.useEffect(() => {
+    if (gameOverCheck(dice)) {
+      setTenziee(true);
+      console.log("you won mf");
+      console.log(tenziee)
+      setStart(false);
+      setRecord()
+    }
+  },[dice])
   // effects END
 
   function allNewDice() {
@@ -72,12 +73,18 @@ function App() {
   });
 
   function onDiceRoll() {
-    setDice((prevDice) => {
-      return prevDice.map((die) => {
-        return die.isHeld ? die : { ...die, value: getRandomVal() };
+    if(!tenziee)
+    {
+      setDice((prevDice) => {
+        return prevDice.map((die) => {
+          return die.isHeld ? die : { ...die, value: getRandomVal() };
+        });
       });
-    });
-    updateRoll()
+      updateRoll()
+    }
+    else {
+      resetGame()
+    }
   }
 
   function gameOverCheck(dice) {
@@ -89,25 +96,54 @@ function App() {
   }
 
   function updateRoll() {
-    setRoll(prevRoll => ++prevRoll )
+    setRoll(prevRoll => ++prevRoll)
   }
+  // -----------------Best Time and Roll----------------------------------
+
+  function setRecord() {
+    if (!bestRoll || roll < bestRoll) {
+      setBestRoll(roll)
+    }
+    // divide by 10 for precision
+    const timeFloored = Math.floor(timer / 10)
+    if (!bestTime || timeFloored < bestTime) {
+      setBestTime(timeFloored)
+    }
+  }
+
+  // save value of Best roll and best Time everytime they change
+  React.useEffect(()=> {
+    localStorage.setItem("bestRoll", JSON.stringify(bestRoll))
+  },[bestRoll])
+
+  React.useEffect(()=>{
+    localStorage.setItem("bestTime", JSON.stringify(bestTime))
+  },[bestTime])
+
+  function resetGame() {
+    setTenziee(false)
+    setRoll(0)
+    setDice(allNewDice())
+    setStart(true)
+    setTimer(0)
+  }
+
   // ---------------------TIMER--------------------------------------------
   const [timer, setTimer] = React.useState(0)
-  const [start, setStart] = React.useState(true)
+  const [start, setStart] = React.useState(true) //To start and stop game
 
   React.useEffect(() => {
     let interval = null;
-    if(start)
-    {
+    if (start) {
       interval = setInterval(() => {
         setTimer(prevTime => prevTime + 20)
-      },20)
+      }, 20)
     }
     else {
       clearInterval(interval)
     }
     return () => clearInterval(interval);
-  },[start])
+  }, [start])
 
 
   function formatTime(time) {
@@ -120,11 +156,11 @@ function App() {
 
 
   return (
-    <div className="bg-slate-700 w-screen h-screen m-0 p-0">
-      {tenziee && <ConfettiExplosion /> }
-      <div className=" bg-slate-50 mx-32 p-8 my-auto w-1/2">
-      <h1 className="">Tenzies</h1>
-      {!tenziee && (
+    <div className="app-container shadow-shorter">
+      {/* {tenziee && <Confetti /> } */}
+      <div className="main">
+        <h1 className="title">Tenzies</h1>
+        {!tenziee && (
           <p className="instructions">
             Roll until all dice are the same.
             <br /> Click each die to freeze it at its current value between
@@ -132,18 +168,17 @@ function App() {
           </p>
         )}
         {tenziee && <p className="winner gradient-text"> YOU WON!</p>}
-        <h1>{roll}</h1>
-        <p>{formatTime(timer)}</p>
-        <div className="grid grid-cols-5 grid-rows-2 gap-">
-          {diceElement}
-          <button
-            className="bg-blue-500 w-full h-full p-2 text-white text-lg rounded-lg hover:bg-blue-600"
-            onClick={onDiceRoll}
-          >
-            {tenziee ? "New game" : "Roll"}
-          </button>
+        <div className="stats-container">
+          <p>{roll}</p>
+          <p>{formatTime(timer)}</p>
         </div>
+        <div className="dice-container">
+          {diceElement}
+        </div>
+        <button className="roll-dice" onClick={onDiceRoll}> {tenziee ? "New game" : "Roll"}</button>
+        <Scorecard bestRoll= {bestRoll} bestTime= {bestTime} />
       </div>
+      <Footer />
     </div>
   );
 }
